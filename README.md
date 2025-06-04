@@ -22,7 +22,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## To-Do App
 
-This project includes a simple to-do app. To use it:
+This project includes a simple to-do app styled with [Tailwind CSS](https://tailwindcss.com). To use it:
 
 1. Run the Prisma migrations:
    ```bash
