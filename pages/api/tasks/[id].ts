@@ -12,10 +12,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === "PUT") {
-    const { title, completed } = req.body;
+    const { title, completed ,priority} = req.body;
     const updatedTask = await prisma.task.update({
       where: { id: Number(id) },
-      data: { title, completed },
+      data: { title, completed, priority: priority || 'Medium' }, // Default to 'Medium' if not provided
     });
     return res.status(200).json(updatedTask);
   }
