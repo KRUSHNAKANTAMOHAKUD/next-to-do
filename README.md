@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## To-Do App
+
+This project includes a simple to-do app styled with [Tailwind CSS](https://tailwindcss.com). To use it:
+
+1. Run the Prisma migrations:
+   ```bash
+   npx prisma migrate dev
+   ```
+
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Navigate to [http://localhost:3000/todo](http://localhost:3000/todo) to manage your tasks.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
