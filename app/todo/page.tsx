@@ -6,6 +6,7 @@ export default function TodoPage() {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
   const [editIndex, setEditIndex] = useState(null);
+  const [priority, setPriority] = useState("Medium");
 
   useEffect(() => {
     fetch("/api/tasks")
@@ -21,7 +22,7 @@ export default function TodoPage() {
       const res = await fetch(`/api/tasks/${taskToEdit.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTask, completed: taskToEdit.completed }),
+        body: JSON.stringify({ title: newTask, completed: taskToEdit.completed, priority }),
       });
       const updatedTask = await res.json();
       setTasks(
@@ -34,13 +35,14 @@ export default function TodoPage() {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTask }),
+        body: JSON.stringify({ title: newTask, priority }),
       });
       const newTaskItem = await res.json();
       setTasks([...tasks, newTaskItem]);
     }
 
     setNewTask("");
+    setPriority("Medium");
   };
 
   const deleteTask = async (id) => {
@@ -106,6 +108,21 @@ export default function TodoPage() {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
         />
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          style={{
+            fontSize: "1.2rem",
+            padding: "10px",
+            marginRight: "10px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        >
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
         <button
           style={{
             fontSize: "1.2rem",
@@ -157,6 +174,15 @@ export default function TodoPage() {
                   }}
                 >
                   {task.title}
+                </span>
+                <span
+                  style={{
+                    fontSize: "1rem",
+                    color: task.priority === "High" ? "red" : task.priority === "Medium" ? "orange" : "green",
+                    marginLeft: "10px",
+                  }}
+                >
+                  {task.priority}
                 </span>
               </div>
               <div>

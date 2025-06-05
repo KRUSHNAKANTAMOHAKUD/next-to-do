@@ -10,8 +10,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === "POST") {
-    const { title } = req.body;
-    const newTask = await prisma.task.create({ data: { title } });
+    const { title ,priority} = req.body;
+    const newTask = await prisma.task.create({ data: {  title,
+      priority: priority || 'Medium',
+      completed: false, } });
     return res.status(201).json(newTask);
   }
 

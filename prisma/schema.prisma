@@ -37,4 +37,17 @@ model Task {
   title       String
   completed   Boolean  @default(false)
   createdAt   DateTime @default(now())
+enum Priority {
+  HIGH   @map("High")
+  MEDIUM @map("Medium")
+  LOW    @map("Low")
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  priority    Priority @default(MEDIUM)
+}
 }
