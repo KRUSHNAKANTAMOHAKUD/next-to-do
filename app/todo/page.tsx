@@ -210,7 +210,7 @@ export default function TodoPage() {
           placeholder={editIndex !== null ? "Edit task..." : "Add task..."}
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
-          onKeyPress={(e) => e.key === "Enter" && handleAction()}
+          onKeyDown={(e) => e.key === "Enter" && handleAction()}
         />
         <select
           value={priority}
