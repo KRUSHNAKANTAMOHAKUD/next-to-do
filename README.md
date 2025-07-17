@@ -22,19 +22,40 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## To-Do App
 
-This project includes a simple to-do app styled with [Tailwind CSS](https://tailwindcss.com). To use it:
+This project includes a simple to-do app styled with [Tailwind CSS](https://tailwindcss.com) that uses localStorage for data persistence.
 
-1. Run the Prisma migrations:
-   ```bash
-   npx prisma migrate dev
-   ```
+### Getting Started with the Todo App:
 
-2. Start the development server:
+1. Start the development server:
    ```bash
    npm run dev
    ```
 
-3. Navigate to [http://localhost:3000/todo](http://localhost:3000/todo) to manage your tasks.
+2. Navigate to [http://localhost:3000/todo](http://localhost:3000/todo) to manage your tasks.
+
+## localStorage-Based Todo Features
+
+The todo app now uses localStorage instead of a database for persistence. This means:
+
+- **No database required**: All tasks are stored in your browser's localStorage
+- **Instant persistence**: Changes are saved immediately to localStorage
+- **Export/Import**: You can export your tasks to a JSON file and import them later
+- **Browser-specific**: Tasks are stored per browser and won't sync across devices
+- **Data management**: Includes options to clear all tasks and manage your data
+
+### localStorage Features:
+- Add, edit, and delete tasks
+- Mark tasks as complete/incomplete
+- View task completion statistics
+- Export tasks to JSON file
+- Import tasks from JSON file
+- Clear all tasks with confirmation
+
+### Usage:
+1. Start the development server: `npm run dev`
+2. Navigate to the todo page: `http://localhost:3000/todo`
+3. Add tasks and manage your todo list
+4. Use export/import features to backup or transfer your tasks
 
 ## Learn More
 

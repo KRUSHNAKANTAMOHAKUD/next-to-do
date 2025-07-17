@@ -2,29 +2,42 @@
 
 import { useState, useEffect } from "react";
 
-export default function TodoPage() {
-  const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState("");
-  const [editIndex, setEditIndex] = useState(null);
-  const [priority, setPriority] = useState("Medium");
+interface Task {
+  id: number;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+}
 
+export default function TodoPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTask, setNewTask] = useState("");
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+
+  // Load tasks from localStorage on component mount
   useEffect(() => {
-    fetch("/api/tasks")
-      .then((res) => res.json())
-      .then(setTasks);
+    const savedTasks = localStorage.getItem("todos");
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
+    }
   }, []);
 
-  const handleAction = async () => {
+  // Save tasks to localStorage whenever tasks change
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(tasks));
+  }, [tasks]);
+
+  const handleAction = () => {
     if (newTask.trim() === "") return;
 
     if (editIndex !== null) {
+      // Edit existing task
       const taskToEdit = tasks[editIndex];
-      const res = await fetch(`/api/tasks/${taskToEdit.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTask, completed: taskToEdit.completed, priority }),
-      });
-      const updatedTask = await res.json();
+      const updatedTask = {
+        ...taskToEdit,
+        title: newTask,
+      };
+      
       setTasks(
         tasks.map((task, index) =>
           index === editIndex ? updatedTask : task
@@ -32,41 +45,77 @@ export default function TodoPage() {
       );
       setEditIndex(null);
     } else {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTask, priority }),
-      });
-      const newTaskItem = await res.json();
+      // Add new task
+      const newTaskItem: Task = {
+        id: Date.now(), // Use timestamp as unique ID
+        title: newTask,
+        completed: false,
+        createdAt: new Date().toISOString(),
+      };
       setTasks([...tasks, newTaskItem]);
     }
 
     setNewTask("");
-    setPriority("Medium");
   };
 
-  const deleteTask = async (id) => {
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+  const deleteTask = (id: number) => {
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  const startEdit = (index) => {
+  const startEdit = (index: number) => {
     setNewTask(tasks[index].title);
     setEditIndex(index);
   };
 
-  const toggleTask = async (id, completed) => {
-    await fetch(`/api/tasks/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed: !completed }),
-    });
+  const toggleTask = (id: number, completed: boolean) => {
     setTasks(
       tasks.map((task) =>
         task.id === id ? { ...task, completed: !completed } : task
       )
     );
   };
+
+  const clearAllTasks = () => {
+    if (confirm("Are you sure you want to clear all tasks?")) {
+      setTasks([]);
+      localStorage.removeItem("todos");
+    }
+  };
+
+  const exportTasks = () => {
+    const dataStr = JSON.stringify(tasks, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `todos_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const importTasks = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedTasks = JSON.parse(e.target?.result as string);
+          if (Array.isArray(importedTasks)) {
+            setTasks(importedTasks);
+          } else {
+            alert("Invalid file format");
+          }
+        } catch (error) {
+          alert("Error reading file");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const completedTasks = tasks.filter(task => task.completed).length;
+  const totalTasks = tasks.length;
 
   return (
     <div
@@ -82,11 +131,21 @@ export default function TodoPage() {
           textAlign: "center",
           fontSize: "2.5rem",
           fontWeight: "bold",
-          marginBottom: "20px",
+          marginBottom: "10px",
           color: "green",
         }}
       >
-        To-Do App
+        To-Do App (localStorage)
+      </div>
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: "1rem",
+          marginBottom: "20px",
+          color: "#666",
+        }}
+      >
+        {totalTasks > 0 ? `${completedTasks}/${totalTasks} tasks completed` : "No tasks yet"}
       </div>
       <div
         style={{
@@ -108,21 +167,6 @@ export default function TodoPage() {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
         />
-        <select
-          value={priority}
-          onChange={(e) => setPriority(e.target.value)}
-          style={{
-            fontSize: "1.2rem",
-            padding: "10px",
-            marginRight: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-          }}
-        >
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
         <button
           style={{
             fontSize: "1.2rem",
@@ -137,6 +181,23 @@ export default function TodoPage() {
         >
           {editIndex !== null ? "Update" : "Add"}
         </button>
+        {tasks.length > 0 && (
+          <button
+            style={{
+              fontSize: "1.2rem",
+              padding: "10px 20px",
+              backgroundColor: "#f44336",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              marginLeft: "10px",
+            }}
+            onClick={clearAllTasks}
+          >
+            Clear All
+          </button>
+        )}
       </div>
       <div
         style={{
@@ -174,15 +235,6 @@ export default function TodoPage() {
                   }}
                 >
                   {task.title}
-                </span>
-                <span
-                  style={{
-                    fontSize: "1rem",
-                    color: task.priority === "High" ? "red" : task.priority === "Medium" ? "orange" : "green",
-                    marginLeft: "10px",
-                  }}
-                >
-                  {task.priority}
                 </span>
               </div>
               <div>
@@ -228,6 +280,53 @@ export default function TodoPage() {
           </div>
         )}
       </div>
+      {tasks.length > 0 && (
+        <div style={{ 
+          textAlign: "center", 
+          marginTop: "20px",
+          padding: "15px",
+          backgroundColor: "#f0f0f0",
+          borderRadius: "8px"
+        }}>
+          <h3 style={{ marginBottom: "10px", color: "#333" }}>Data Management</h3>
+          <button
+            style={{
+              fontSize: "1rem",
+              padding: "8px 16px",
+              backgroundColor: "#2196f3",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              marginRight: "10px",
+            }}
+            onClick={exportTasks}
+          >
+            Export Tasks
+          </button>
+          <input
+            type="file"
+            accept=".json"
+            onChange={importTasks}
+            style={{ display: "none" }}
+            id="file-import"
+          />
+          <button
+            style={{
+              fontSize: "1rem",
+              padding: "8px 16px",
+              backgroundColor: "#ff9800",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+            onClick={() => document.getElementById('file-import')?.click()}
+          >
+            Import Tasks
+          </button>
+        </div>
+      )}
     </div>
   );
 }
