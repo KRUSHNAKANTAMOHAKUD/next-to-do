@@ -46,6 +46,8 @@ The todo app now uses localStorage instead of a database for persistence. This m
 ### localStorage Features:
 - Add, edit, and delete tasks
 - Mark tasks as complete/incomplete
+- Set priority levels (High, Medium, Low) with visual indicators
+- Automatic sorting by priority and completion status
 - View task completion statistics
 - Export tasks to JSON file
 - Import tasks from JSON file
@@ -54,7 +56,7 @@ The todo app now uses localStorage instead of a database for persistence. This m
 ### Usage:
 1. Start the development server: `npm run dev`
 2. Navigate to the todo page: `http://localhost:3000/todo`
-3. Add tasks and manage your todo list
+3. Add tasks, set priorities, and manage your todo list
 4. Use export/import features to backup or transfer your tasks
 
 ## Learn More

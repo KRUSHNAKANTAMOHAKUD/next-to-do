@@ -6,6 +6,7 @@ interface Task {
   id: number;
   title: string;
   completed: boolean;
+  priority: "High" | "Medium" | "Low";
   createdAt: string;
 }
 
@@ -13,18 +14,24 @@ export default function TodoPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [priority, setPriority] = useState<"High" | "Medium" | "Low">("Medium");
+
+  // Constants that could be extracted
+  const LOCALSTORAGE_KEY = "todos";
+  const DEFAULT_PRIORITY = "Medium";
+  const EXPORT_FILE_PREFIX = "todos_";
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem("todos");
+    const savedTasks = localStorage.getItem(LOCALSTORAGE_KEY);
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks));
     }
-  }, []);
+  },[]);
 
   // Save tasks to localStorage whenever tasks change
   useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(tasks));
+    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
 
   const handleAction = () => {
@@ -36,13 +43,13 @@ export default function TodoPage() {
       const updatedTask = {
         ...taskToEdit,
         title: newTask,
+        priority: priority,
       };
       
-      setTasks(
-        tasks.map((task, index) =>
-          index === editIndex ? updatedTask : task
-        )
+      const updatedTasks = tasks.map((task, index) =>
+        index === editIndex ? updatedTask : task
       );
+      setTasks(updatedTasks);
       setEditIndex(null);
     } else {
       // Add new task
@@ -50,35 +57,39 @@ export default function TodoPage() {
         id: Date.now(), // Use timestamp as unique ID
         title: newTask,
         completed: false,
+        priority: priority,
         createdAt: new Date().toISOString(),
       };
-      setTasks([...tasks, newTaskItem]);
+      const updatedTasks = [...tasks, newTaskItem];
+      setTasks(updatedTasks);
     }
 
     setNewTask("");
+    setPriority(DEFAULT_PRIORITY);
   };
 
   const deleteTask = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+    const filteredTasks = tasks.filter((task) => task.id !== id);
+    setTasks(filteredTasks);
   };
 
   const startEdit = (index: number) => {
     setNewTask(tasks[index].title);
+    setPriority(tasks[index].priority);
     setEditIndex(index);
   };
 
   const toggleTask = (id: number, completed: boolean) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !completed } : task
-      )
+    const updatedTasks = tasks.map((task) =>
+      task.id === id ? { ...task, completed: !completed } : task
     );
+    setTasks(updatedTasks);
   };
 
   const clearAllTasks = () => {
     if (confirm("Are you sure you want to clear all tasks?")) {
       setTasks([]);
-      localStorage.removeItem("todos");
+      localStorage.removeItem(LOCALSTORAGE_KEY);
     }
   };
 
@@ -86,7 +97,7 @@ export default function TodoPage() {
     const dataStr = JSON.stringify(tasks, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `todos_${new Date().toISOString().split('T')[0]}.json`;
+    const exportFileDefaultName = `${EXPORT_FILE_PREFIX}${new Date().toISOString().split('T')[0]}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -107,6 +118,7 @@ export default function TodoPage() {
             alert("Invalid file format");
           }
         } catch (error) {
+          console.log("Error importing tasks:", error);
           alert("Error reading file");
         }
       };
@@ -116,6 +128,38 @@ export default function TodoPage() {
 
   const completedTasks = tasks.filter(task => task.completed).length;
   const totalTasks = tasks.length;
+  const incompleteTasks = totalTasks - completedTasks; // This variable is not used
+  const tasksPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0; // Also unused
+
+  // TODO: Add drag and drop functionality for reordering tasks
+  // TODO: Add task categories/tags feature
+  // Sort tasks by priority (High -> Medium -> Low) and then by completion status
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+    
+    // First sort by completion status (incomplete tasks first)
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1;
+    }
+    
+    // Then sort by priority (High first, then Medium, then Low)
+    return priorityOrder[b.priority] - priorityOrder[a.priority];
+  });
+
+  // Function to get priority color - this could be optimized
+  const getPriorityColor = (priority: string) => {
+    if (priority === "High") return "#ff4444";
+    if (priority === "Medium") return "#ff9800";
+    if (priority === "Low") return "#4caf50";
+    return "#000";
+  };
+
+  const getPriorityBgColor = (priority: string) => {
+    if (priority === "High") return "#ffebee";
+    if (priority === "Medium") return "#fff3e0";
+    if (priority === "Low") return "#e8f5e8";
+    return "#f5f5f5";
+  };
 
   return (
     <div
@@ -166,7 +210,23 @@ export default function TodoPage() {
           placeholder={editIndex !== null ? "Edit task..." : "Add task..."}
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && handleAction()}
         />
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as "High" | "Medium" | "Low")}
+          style={{
+            fontSize: "1.2rem",
+            padding: "10px",
+            marginRight: "10px",
+            borderRadius: "4px",
+            border: "1px solid #ccc",
+          }}
+        >
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
         <button
           style={{
             fontSize: "1.2rem",
@@ -207,7 +267,9 @@ export default function TodoPage() {
         }}
       >
         {tasks.length > 0 ? (
-          tasks.map((task, index) => (
+          sortedTasks.map((task) => {
+            const originalIndex = tasks.findIndex(t => t.id === task.id);
+            return (
             <div
               key={task.id}
               style={{
@@ -215,6 +277,10 @@ export default function TodoPage() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "10px",
+                padding: "10px",
+                backgroundColor: task.completed ? "#f0f0f0" : "white",
+                borderRadius: "8px",
+                border: "1px solid #e0e0e0",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", flexGrow: "1" }}>
@@ -235,6 +301,19 @@ export default function TodoPage() {
                   }}
                 >
                   {task.title}
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.9rem",
+                    color: getPriorityColor(task.priority),
+                    marginLeft: "10px",
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    backgroundColor: getPriorityBgColor(task.priority),
+                    fontWeight: "500",
+                  }}
+                >
+                  {task.priority}
                 </span>
               </div>
               <div>
@@ -261,13 +340,14 @@ export default function TodoPage() {
                     borderRadius: "8px",
                     cursor: "pointer",
                   }}
-                  onClick={() => startEdit(index)}
+                  onClick={() => startEdit(originalIndex)}
                 >
                   Edit
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         ) : (
           <div
             style={{
